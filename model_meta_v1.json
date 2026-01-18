@@ -1,0 +1,19 @@
+{
+    "model_name": "churn_xgboost",
+    "version": "v1",
+    "algorithm": "XGBoost",
+    "features": [
+        "tenure",
+        "MonthlyCharges",
+        "TotalCharges",
+        "PaymentMethod",
+        "InternetService",
+        "Contract",
+        "num_support_tickets"
+    ],
+    "status": "production",
+    "training_data": "Telco Churn + synthetic tickets",
+    "metric": {
+        "roc_auc": 0.839463995607975
+    }
+}
