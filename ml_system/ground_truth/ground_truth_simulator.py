@@ -7,21 +7,17 @@ def simulate_ground_truth(
     max_records: int = None,
     churn_probability: float = 0.5
 ):
-    existing_gt = {
-        doc["customer_id"]
-        for doc in ground_truth_logger_collection.find()
-    }
-
-    cursor = prediction_logs_collection.find()
+    cursor = prediction_logs_collection.find(
+        {"actual_churn": {"$exists": False}}
+    )
 
     if max_records:
         cursor = cursor.limit(max_records)
 
     for pred in cursor:
-        cid = pred["customer_id"]
-
-        if cid in existing_gt:
-            continue
+        prediction_id = pred["_id"]
 
         actual_churn = 1 if random.random() < churn_probability else 0
-        log_ground_truth(cid, actual_churn)
+
+        log_ground_truth(prediction_id, actual_churn)
+

@@ -1,7 +1,7 @@
 from evaluation.metrics import compute_metrics
 from monitoring.performance_utility import drift_decision
 from monitoring.drift_utils import overall_status
-from evaluation.joint_predictions_truth import get_joined_prediction_records
+from evaluation.joint_predictions_truth import get_joined_prediction_records, save_performance_drift_report
 from datetime import datetime
 import numpy as np
 import json
@@ -24,16 +24,17 @@ def run_performance_monitoring(model_version: str) -> dict:
         acc_drop=1 - metrics["accuracy"],
         f1_drop=1 - metrics["f1"]
     )
+    save_performance_drift_report(
+        model_version=model_version,
+        metrics=metrics,
+        status=drift_status
+    )
+
 
     return {
         "metrics": metrics,
         "status": drift_status
     }
-
-
-
-
-
 
 
 FEATURE_COLUMNS = [

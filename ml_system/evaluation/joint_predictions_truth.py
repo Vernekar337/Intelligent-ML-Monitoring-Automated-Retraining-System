@@ -1,5 +1,6 @@
 from typing import List, Dict   
-from ml_db.mongo_client import prediction_logs_collection, ground_truth_logger_collection
+from ml_db.mongo_client import prediction_logs_collection, ground_truth_logger_collection, performance_drift_reports_collection
+from datetime import datetime
 
 
 def get_joined_prediction_records(
@@ -7,46 +8,47 @@ def get_joined_prediction_records(
     window_size: int = 100
 ) -> List[Dict]:
 
-    prediction_cursor = (
+    cursor = (
         prediction_logs_collection
-        .find({"model_version": model_version})
+        .find({
+            "model_version": model_version,
+            "actual_churn": {"$exists": True}
+        })
         .sort("timestamp", -1)
         .limit(window_size)
     )
 
-    predictions = list(prediction_cursor)
+    records = list(cursor)
 
-    if not predictions:
+    if not records:
         return []
-
-    ground_truth_cursor = ground_truth_logger_collection.find()
-    ground_truth = list(ground_truth_cursor)
-
-    gt_lookup = {}
-    for gt in ground_truth:
-        cid = gt["customer_id"]
-        observed_at = gt.get("observed_at")
-
-        if cid not in gt_lookup:
-            gt_lookup[cid] = gt
-        else:
-            if observed_at > gt_lookup[cid].get("observed_at"):
-                gt_lookup[cid] = gt
 
     joined_records = []
 
-    for p in predictions:
-        cid = p.get("customer_id")
-
-        if cid not in gt_lookup:
-            continue
-
+    for r in records:
         joined_records.append({
-            "customer_id": cid,
-            "prediction": int(p["prediction"]),
-            "actual_label": int(gt_lookup[cid]["actual_churn"]),
-            "predicted_at": p["timestamp"],
-            "model_version": p["model_version"]
+            "customer_id": r.get("customer_id"),
+            "prediction": int(r["prediction"]),
+            "actual_label": int(r["actual_churn"]),
+            "predicted_at": r["timestamp"],
+            "model_version": r["model_version"]
         })
+        
 
     return joined_records
+
+def save_performance_drift_report(
+    model_version: str,
+    metrics: dict,
+    status: str
+):
+    record = {
+        "model_version": model_version,
+        "metrics": metrics,
+        "status": status,
+        "generated_at": datetime.utcnow()
+    }
+
+    performance_drift_reports_collection.insert_one(record)
+
+

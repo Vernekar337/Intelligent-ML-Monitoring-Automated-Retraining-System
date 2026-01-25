@@ -25,7 +25,6 @@ def predict(
 
     y_pred = model.predict(X_processed)[0]
 
-    # If classifier supports probability, log it
     proba = None
     if hasattr(model, "predict_proba"):
         proba = float(model.predict_proba(X_processed)[0][1])

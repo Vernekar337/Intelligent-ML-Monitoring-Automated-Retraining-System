@@ -5,6 +5,7 @@ import joblib
 import json
 import os
 from sklearn.base import clone
+from sklearn.metrics import accuracy_score, f1_score, precision_score, recall_score
 
 def preprocess_data(X_train, X_val, y_train, model_v):
     BASE_DIR = get_base_dir()
@@ -87,25 +88,44 @@ def full_data_generator(df_train, df_val):
   
   
 def retrain_model(
-    X_train: pd.DataFrame,
-    y_train: pd.Series,
-    base_model_path: str,
-    preprocessor_path: str,
-    new_model_path: str
+    X_train,
+    y_train,
+    X_val,
+    y_val,
+    base_model_path,
+    preprocessor_path,
+    new_model_path
 ):
     base_model = joblib.load(base_model_path)
     preprocessor = joblib.load(preprocessor_path)
 
     model = clone(base_model)
 
+    # Train
     X_train_processed = preprocessor.transform(X_train)
     model.fit(X_train_processed, y_train)
+
+    # Evaluate
+    X_val_processed = preprocessor.transform(X_val)
+    y_pred = model.predict(X_val_processed)
+
+    metrics = {
+        "accuracy": accuracy_score(y_val, y_pred),
+        "f1": f1_score(y_val, y_pred),
+        "precision": precision_score(y_val, y_pred),
+        "recall": recall_score(y_val, y_pred)
+    }
+    os.makedirs(os.path.dirname(new_model_path), exist_ok=True)
+
+    joblib.dump(model, new_model_path)
+    assert os.path.exists(new_model_path), "Model file was not saved"
 
     joblib.dump(model, new_model_path)
 
     return {
         "trained_at": datetime.utcnow().isoformat(),
-        "samples_used": len(X_train)
+        "samples_used": len(X_train),
+        "metrics": metrics
     }
     
 def generate_training_stats(df: pd.DataFrame) -> dict:

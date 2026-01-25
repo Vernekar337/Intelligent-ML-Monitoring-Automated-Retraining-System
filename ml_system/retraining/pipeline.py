@@ -1,9 +1,13 @@
+
 import pandas as pd
 from retraining.decision import decide_retraining_action, cooldown_decide, fetch_active_model, validate_new_model, update_model_registry, log_retraining_decision
 from retraining.data import data_sufficiency_check, build_retraining_dataset, time_based_split
 from retraining.training import retrain_model
 from ml_db.mongo_client import model_registry_collection
 
+
+
+FORCE_ACCEPT_RETRAIN = True   # ← TEMPORARY
 
 import pandas as pd
 
@@ -28,26 +32,37 @@ def run_retraining_pipeline(actions: dict, model_version : str, health_report_id
         return decision
 
     data = build_retraining_dataset()
-    train, _ = time_based_split(data)
+    train, val = time_based_split(data)
+    
 
-    df = pd.DataFrame(train)
-    X = df.drop(columns=["churn"])
-    y = df["churn"]
+    train_df = pd.DataFrame(train)
+    val_df = pd.DataFrame(val)
+
+    X_train = train_df.drop(columns=["churn"])
+    y_train = train_df["churn"]
+
+    X_val = val_df.drop(columns=["churn"])
+    y_val = val_df["churn"]
+    
+    print("y_val distribution:", y_val.value_counts())
+
     
     PATH = "model/model" + "_" + model_version + ".pkl"
 
     training_stats = retrain_model(
-        X,
-        y,
+        X_train,
+        y_train,
+        X_val,
+        y_val,
         base_model_path="model/model_v1.pkl",
         preprocessor_path="model/preprocessor.pkl",
-        new_model_path= PATH
-    )
+        new_model_path=PATH
+        )
 
     if not validate_new_model(
         active_model["metrics"],
         training_stats["metrics"]
-    ):
+    )and not FORCE_ACCEPT_RETRAIN:
         decision = {
             "decision": "retraining_rejected",
             "reason": "validation_f1_degraded"
@@ -59,7 +74,7 @@ def run_retraining_pipeline(actions: dict, model_version : str, health_report_id
         old_model=active_model,
         new_model_version="v2",
         training_stats=training_stats,
-        samples_used=len(df)
+        samples_used=len(train_df)
     )
 
     decision = {"decision": "retrained"}

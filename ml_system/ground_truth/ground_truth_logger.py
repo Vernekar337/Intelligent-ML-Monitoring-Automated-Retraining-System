@@ -1,11 +1,13 @@
+from datetime import datetime
+from ml_db.mongo_client import prediction_logs_collection
 
-import datetime
-from ml_db.mongo_client import ground_truth_logger_collection 
-
-def log_ground_truth( customer_id, actual_churn ):
-  record = {
-    "customer_id" : customer_id,
-    "actual_churn" : actual_churn,
-    "observed_at" : datetime.utcnow().isoformat()
-  }
-  ground_truth_logger_collection.insert_one(record)
+def log_ground_truth(prediction_id, actual_churn):
+    prediction_logs_collection.update_one(
+        {"_id": prediction_id},
+        {
+            "$set": {
+                "actual_churn": actual_churn,
+                "observed_at": datetime.utcnow().isoformat()
+            }
+        }
+    )

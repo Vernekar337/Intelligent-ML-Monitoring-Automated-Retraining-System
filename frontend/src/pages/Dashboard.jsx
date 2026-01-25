@@ -2,109 +2,88 @@ import React, { useEffect, useState } from 'react';
 import { Activity, Clock, AlertTriangle, CheckCircle, Smartphone, ShieldCheck } from 'lucide-react';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
+import FeatureBadge from '../components/ui/FeatureBadge';
+import { mapHealthResponse } from '../utils/healthMapper';
+
 import MetricsCard from '../components/ui/MetricsCard';
 import HistoryChart from '../components/ui/HistoryChart'; // Import HistoryChart
 import { getSystemHealth, getModelPerformance, getFeatureDrift, getPredictionDrift } from '../api/endpoints';
 
+
 // TEMP_UI_ONLY: Mock Data
-const MOCK_HEALTH = {
-  model_version: "v2.3.1",
-  system_status: "healthy",
-  last_pipeline_run: "2023-10-27T14:30:00Z",
-  retraining_recommended: false,
-  cooldown_active: false
-};
+// const MOCK_HEALTH = {
+//   model_version: "v2.3.1",
+//   system_status: "healthy",
+//   last_pipeline_run: "2023-10-27T14:30:00Z",
+//   retraining_recommended: false,
+//   cooldown_active: false
+// };
 
-const MOCK_PERFORMANCE = {
-  model_version: "v2.3.1",
-  metrics: {
-    accuracy: 0.945,
-    precision: 0.912,
-    recall: 0.887,
-    f1: 0.899
-  },
-  history: [
-    { timestamp: "2023-10-20", accuracy: 0.920 },
-    { timestamp: "2023-10-21", accuracy: 0.925 },
-    { timestamp: "2023-10-22", accuracy: 0.930 },
-    { timestamp: "2023-10-23", accuracy: 0.928 },
-    { timestamp: "2023-10-24", accuracy: 0.935 },
-    { timestamp: "2023-10-25", accuracy: 0.942 },
-    { timestamp: "2023-10-26", accuracy: 0.940 },
-    { timestamp: "2023-10-27", accuracy: 0.945 }
-  ]
-};
+// const MOCK_PERFORMANCE = {
+//   model_version: "v2.3.1",
+//   metrics: {
+//     accuracy: 0.945,
+//     precision: 0.912,
+//     recall: 0.887,
+//     f1: 0.899
+//   },
+//   history: [
+//     { timestamp: "2023-10-20", accuracy: 0.920 },
+//     { timestamp: "2023-10-21", accuracy: 0.925 },
+//     { timestamp: "2023-10-22", accuracy: 0.930 },
+//     { timestamp: "2023-10-23", accuracy: 0.928 },
+//     { timestamp: "2023-10-24", accuracy: 0.935 },
+//     { timestamp: "2023-10-25", accuracy: 0.942 },
+//     { timestamp: "2023-10-26", accuracy: 0.940 },
+//     { timestamp: "2023-10-27", accuracy: 0.945 }
+//   ]
+// };
 
-const MOCK_FEATURE_DRIFT = {
-  model_version: "v2.3.1",
-  window: "last_7_days",
-  features: [
-    { name: "account_tenure_days", psi: 0.62, status: "critical" },
-    { name: "avg_transaction_val", psi: 0.35, status: "warning" },
-    { name: "daily_active_mins", psi: 0.18, status: "warning" },
-    { name: "customer_age", psi: 0.05, status: "ok" }
-  ]
-};
+// const MOCK_FEATURE_DRIFT = {
+//   model_version: "v2.3.1",
+//   window: "last_7_days",
+//   features: [
+//     { name: "account_tenure_days", psi: 0.62, status: "critical" },
+//     { name: "avg_transaction_val", psi: 0.35, status: "warning" },
+//     { name: "daily_active_mins", psi: 0.18, status: "warning" },
+//     { name: "customer_age", psi: 0.05, status: "ok" }
+//   ]
+// };
 
-const MOCK_PRED_DRIFT = {
-  model_version: "v2.3.1",
-  psi: 0.34,
-  status: "warning",
-  distribution: { train: [], current: [] } // Dashboard only needs Summary status usually
-};
+// const MOCK_PRED_DRIFT = {
+//   model_version: "v2.3.1",
+//   psi: 0.34,
+//   status: "warning",
+//   distribution: { train: [], current: [] } // Dashboard only needs Summary status usually
+// };
 
 const Dashboard = () => {
-  const [health, setHealth] = useState(null);
-  const [performance, setPerformance] = useState(null);
-  const [featureDrift, setFeatureDrift] = useState(null);
-  const [predDrift, setPredDrift] = useState(null);
+  const [health, setHealth] = useState({});
+  const [error, setError] = useState(null);
+  const [performance, setPerformance] = useState({});
+  const [featureDrift, setFeatureDrift] = useState({});
+  const [predDrift, setPredDrift] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [healthRes, perfRes, fDriftRes, pDriftRes] = await Promise.allSettled([
-          getSystemHealth(),
-          getModelPerformance(),
-          getFeatureDrift(),
-          getPredictionDrift()
-        ]);
+        const healthRes = await getSystemHealth();
+        const mappedHealth = mapHealthResponse(healthRes.data);
+        setHealth(mappedHealth);
 
-        // Health Logic (Mock Fallback)
-        if (healthRes.status === 'fulfilled' && healthRes.value.data) {
-          setHealth(healthRes.value.data);
-        } else {
-          setHealth(MOCK_HEALTH);
-        }
+        const perfRes = await getModelPerformance();
+        setPerformance(perfRes.data);
 
-        // Performance Logic (Mock Fallback)
-        if (perfRes.status === 'fulfilled' && perfRes.value.data) {
-          setPerformance(perfRes.value.data);
-        } else {
-          setPerformance(MOCK_PERFORMANCE);
-        }
+        const fDriftRes = await getFeatureDrift();
+        setFeatureDrift(fDriftRes.data);
 
-        // Feature Drift Logic (Mock Fallback)
-        if (fDriftRes.status === 'fulfilled' && fDriftRes.value.data) {
-          setFeatureDrift(fDriftRes.value.data);
-        } else {
-          setFeatureDrift(MOCK_FEATURE_DRIFT);
-        }
-
-        // Prediction Drift Logic (Mock Fallback)
-        if (pDriftRes.status === 'fulfilled' && pDriftRes.value.data) {
-          setPredDrift(pDriftRes.value.data);
-        } else {
-          setPredDrift(MOCK_PRED_DRIFT);
-        }
+        const pDriftRes = await getPredictionDrift();
+        setPredDrift(pDriftRes.data);
 
       } catch (err) {
         console.error("Critical error in dashboard data fetch", err);
-        // Ensure UI still renders mocks even on catastrophic failure
-        setHealth(MOCK_HEALTH);
-        setPerformance(MOCK_PERFORMANCE);
-        setFeatureDrift(MOCK_FEATURE_DRIFT);
-        setPredDrift(MOCK_PRED_DRIFT);
+        setError("Unable to load system health");
       } finally {
         setLoading(false);
       }
@@ -192,10 +171,10 @@ const Dashboard = () => {
 
           {performance ? (
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              <MetricsCard title="Accuracy" value={performance.metrics.accuracy?.toFixed(3)} />
-              <MetricsCard title="Precision" value={performance.metrics.precision?.toFixed(3)} />
-              <MetricsCard title="Recall" value={performance.metrics.recall?.toFixed(3)} />
-              <MetricsCard title="F1 Score" value={performance.metrics.f1?.toFixed(3)} />
+              <MetricsCard title="Accuracy" value={(performance.metrics.accuracy * 100).toFixed(2)} />
+              <MetricsCard title="Precision" value={(performance.metrics.precision * 100).toFixed(2)} />
+              <MetricsCard title="Recall" value={(performance.metrics.recall * 100).toFixed(2)} />
+              <MetricsCard title="F1 Score" value={(performance.metrics.f1 * 100).toFixed(2)} />
             </div>
           ) : (
             <Card><p className="text-gray-400 text-center py-4">No performance data available</p></Card>
@@ -221,14 +200,14 @@ const Dashboard = () => {
             {featureDrift ? (
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-gray-600">Window</span>
-                  <span className="text-sm font-medium">{featureDrift.window}</span>
+                  <span className="text-sm text-gray-800">Window</span>
+                  <span className="text-sm text-gray-600 font-medium">Type: {featureDrift.window_type}, Size: {featureDrift.window_size}</span>
                 </div>
                 <div className="grid grid-cols-1 gap-2">
                   {featureDrift.features?.slice(0, 5).map(f => (
                     <div key={f.name} className="flex items-center justify-between p-2 bg-gray-50 rounded text-sm">
-                      <span className="truncate max-w-[120px]" title={f.name}>{f.name}</span>
-                      <Badge status={f.status} />
+                      <span className="truncate max-w-[120px] text-gray-600" title={f.name}>{f.name}</span>
+                      <FeatureBadge status={f.status} />
                     </div>
                   ))}
                 </div>
@@ -241,11 +220,11 @@ const Dashboard = () => {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Overall Status</span>
-                  <Badge status={predDrift.status} />
+                  <FeatureBadge status={predDrift.status} />
                 </div>
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">PSI Score</span>
-                  <span className="text-lg font-mono font-medium">{predDrift.psi?.toFixed(3)}</span>
+                  <span className="text-lg text-gray-600 font-mono font-medium">{predDrift.psi?.toFixed(3)}</span>
                 </div>
               </div>
             ) : <p className="text-gray-400 text-sm">No drift data</p>}
