@@ -6,43 +6,9 @@ import Table from '../components/ui/Table';
 import { getMonitoringReports } from '../api/endpoints';
 
 // TEMP_UI_ONLY: Mock Data
-const MOCK_REPORTS = [
-  {
-    timestamp: "2023-10-27T14:30:00Z",
-    system_status: "healthy",
-    feature_drift_detected: false,
-    prediction_drift_detected: false,
-    performance_degraded: false,
-    retraining_triggered: false
-  },
-  {
-    timestamp: "2023-10-26T14:30:00Z",
-    system_status: "warning",
-    feature_drift_detected: true,
-    prediction_drift_detected: false,
-    performance_degraded: false,
-    retraining_triggered: false
-  },
-  {
-    timestamp: "2023-10-25T14:30:00Z",
-    system_status: "critical",
-    feature_drift_detected: true,
-    prediction_drift_detected: true,
-    performance_degraded: true,
-    retraining_triggered: true
-  },
-  {
-    timestamp: "2023-10-24T14:30:00Z",
-    system_status: "healthy",
-    feature_drift_detected: false,
-    prediction_drift_detected: false,
-    performance_degraded: false,
-    retraining_triggered: false
-  }
-];
 
 const MonitoringReports = () => {
-  const [reports, setReports] = useState(null);
+  const [reports, setReports] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {

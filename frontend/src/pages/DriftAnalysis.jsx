@@ -1,40 +1,41 @@
 import React, { useEffect, useState } from 'react';
 import Card from '../components/ui/Card';
 import Badge from '../components/ui/Badge';
+import FeatureBadge from '../components/ui/FeatureBadge';
 import Table from '../components/ui/Table';
 import DistributionChart from '../components/ui/DistributionChart';
 import { getFeatureDrift, getPredictionDrift } from '../api/endpoints';
 
 // TEMP_UI_ONLY: Mock data for visualization
-const MOCK_FEATURE_DRIFT = {
-  model_version: "v1",
-  window: "last_7_days",
-  features: [
-    { name: "account_tenure_days", psi: 0.62, status: "critical" },
-    { name: "avg_transaction_val", psi: 0.35, status: "warning" },
-    { name: "daily_active_mins", psi: 0.18, status: "warning" },
-    { name: "customer_age", psi: 0.05, status: "ok" },
-    { name: "num_support_tickets", psi: 0.02, status: "ok" },
-    { name: "last_login_device", psi: 0.12, status: "ok" },
-    { name: "marketing_opt_in", psi: 0.01, status: "ok" },
-    { name: "region_code", psi: 0.08, status: "ok" }
-  ]
-};
+// const MOCK_FEATURE_DRIFT = {
+//   model_version: "v1",
+//   window: "last_7_days",
+//   features: [
+//     { name: "account_tenure_days", psi: 0.62, status: "critical" },
+//     { name: "avg_transaction_val", psi: 0.35, status: "warning" },
+//     { name: "daily_active_mins", psi: 0.18, status: "warning" },
+//     { name: "customer_age", psi: 0.05, status: "ok" },
+//     { name: "num_support_tickets", psi: 0.02, status: "ok" },
+//     { name: "last_login_device", psi: 0.12, status: "ok" },
+//     { name: "marketing_opt_in", psi: 0.01, status: "ok" },
+//     { name: "region_code", psi: 0.08, status: "ok" }
+//   ]
+// };
 
-const MOCK_PREDICTION_DRIFT = {
-  model_version: "v1",
-  psi: 0.34,
-  status: "warning",
-  distribution: {
-    // Simulated bimodal distribution shift
-    train: [15, 30, 45, 60, 80, 65, 40, 20, 10, 5],
-    current: [10, 25, 40, 50, 40, 60, 80, 65, 30, 15]
-  }
-};
+// const MOCK_PREDICTION_DRIFT = {
+//   model_version: "v1",
+//   psi: 0.34,
+//   status: "warning",
+//   distribution: {
+//     // Simulated bimodal distribution shift
+//     train: [15, 30, 45, 60, 80, 65, 40, 20, 10, 5],
+//     current: [10, 25, 40, 50, 40, 60, 80, 65, 30, 15]
+//   }
+// };
 
 const DriftAnalysis = () => {
-  const [featureDrift, setFeatureDrift] = useState(null);
-  const [predDrift, setPredDrift] = useState(null);
+  const [featureDrift, setFeatureDrift] = useState({});
+  const [predDrift, setPredDrift] = useState({});
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -100,7 +101,7 @@ const DriftAnalysis = () => {
                       {feature.psi?.toFixed(2)}
                     </td>
                     <td className="whitespace-nowrap px-3 py-4 text-sm border-b border-gray-100">
-                      <Badge status={feature.status} />
+                      <FeatureBadge status={feature.status} />
                     </td>
                   </tr>
                 ))}
@@ -119,7 +120,7 @@ const DriftAnalysis = () => {
                   <p className="text-sm font-medium text-gray-500">PSI Score</p>
                   <div className="flex items-baseline gap-2">
                     <p className="text-3xl font-bold text-gray-900 mt-1">{predDrift.psi?.toFixed(2)}</p>
-                    <Badge status={predDrift.status} className="text-xs px-2 py-0.5" />
+                    <FeatureBadge status={predDrift.status} className="text-xs px-2 py-0.5" />
                   </div>
                 </div>
                 <div className="text-right">

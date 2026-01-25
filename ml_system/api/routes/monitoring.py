@@ -4,7 +4,8 @@ from ml_db.mongo_client import (
   prediction_drift_report_collection,
   performance_drift_reports_collection,
   feature_drift_reports_collection,
-  model_health_reports_collection
+  model_health_reports_collection,
+  overall_report_collection
 )
 
 router = APIRouter(
@@ -148,10 +149,33 @@ def get_latest_performance_report():
         "history" : accuracy_list
     }
   
-  
-  
-  
+@router.get("/reports")
 
+def get_latest_overall_report():
+  report = overall_report_collection.find()
+  
+  if not report:
+    raise HTTPException(
+      status_code= 404,
+      detail="Overall report not found"
+    )
+    
+  report_list = list(report)
+  final_list = []
+  
+  for i in report_list:
+    final_list.append({
+      "timestamp" : i["timestamp"],
+      "system_status": i["system_status"],
+      "feature_drift_detected": i["feature_drift_detected"],
+      "prediction_drift_detected": i["prediction_drift_detected"],
+      "performance_degraded": i["performance_degraded"],
+      "retraining_triggered": i["retraining_triggered"]
+    })
+    
+  return final_list
+    
+  
 @router.get("/ping")
 
 def monitoring_ping():
